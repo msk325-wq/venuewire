@@ -1,0 +1,29 @@
+[package]
+name = "vw-sink-clickhouse"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vw-core.workspace = true
+
+async-trait.workspace = true
+chrono.workspace = true
+reqwest.workspace = true
+rust_decimal.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+prometheus.workspace = true
+
+[dev-dependencies]
+# Local HTTP stub server for HttpTransport tests (no live ClickHouse).
+axum.workspace = true
+rust_decimal_macros.workspace = true
+tokio = { workspace = true, features = ["test-util"] }
+
+[lints]
+workspace = true

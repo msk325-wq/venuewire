@@ -1,0 +1,68 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/core",
+    "crates/connectors",
+    "crates/matcher",
+    "crates/state",
+    "crates/sink-clickhouse",
+    "crates/server",
+    "crates/recorder",
+    "bins/venuewire",
+    "bins/vwtap",
+    "bins/vwbench",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+
+[workspace.dependencies]
+# internal crates
+vw-core = { path = "crates/core" }
+vw-connectors = { path = "crates/connectors" }
+vw-matcher = { path = "crates/matcher" }
+vw-state = { path = "crates/state" }
+vw-sink-clickhouse = { path = "crates/sink-clickhouse" }
+vw-server = { path = "crates/server" }
+vw-recorder = { path = "crates/recorder" }
+
+# external
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rust_decimal = { version = "1", features = ["serde"] }
+rust_decimal_macros = "1"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "2"
+anyhow = "1"
+async-trait = "0.1"
+rand = "0.8"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+figment = { version = "0.10", features = ["toml", "env"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+clap = { version = "4", features = ["derive"] }
+owo-colors = "4"
+rsa = { version = "0.9", features = ["sha2"] }
+sha2 = "0.10"
+base64 = "0.22"
+url = "2"
+# M3–M5 deps, hoisted from crate manifests during the integration pass.
+regex = "1"
+serde_yaml = "0.9"
+dashmap = "6"
+redis = { version = "0.32", features = ["tokio-comp", "connection-manager"] }
+axum = { version = "0.8", features = ["ws"] }
+prometheus = { version = "0.14", default-features = false }
+subtle = "2.6"
+tempfile = "3"
+
+[workspace.lints.rust]
+missing_debug_implementations = "warn"
+
+[profile.release]
+debug = 1 # keep symbols for profiling in benchmarks

@@ -1,0 +1,74 @@
+# Annotated example of the venuewire cross-venue match registry
+# (the real file is config/matches.yaml — written by the matcher, edited by you).
+#
+# Schema per entry:
+#   match_id:   stable slug identifying the match (engine-generated from shared
+#               normalized tokens + a hash of the legs; keep it stable once set)
+#   legs:       instrument ids, "{venue}:{venue_native_id}", at least two,
+#               one per venue
+#   confidence: exact | high | review
+#               (exact = rule-pass key collision; high = LLM-adjudicated;
+#                review = lexical similarity or low-confidence LLM verdict)
+#   method:     rule | embedding | manual
+#               ("embedding" = the similarity pass, lexical or LLM;
+#                "manual" = a human wrote this entry — overrides everything)
+#   status:     active | review | rejected
+#               (active   = trusted, feeds divergence detection;
+#                review   = human queue, excluded from divergence detection;
+#                rejected = the engine must never re-emit this leg set)
+#   note:       optional free text (the engine records its evidence here)
+#
+# Editing rules:
+# - To confirm a review match: change status to `active`.
+# - To kill a bad match forever: change status to `rejected` (keep the entry —
+#   deleting it lets the engine re-derive the match on the next pass).
+# - To pin a match the engine missed: add an entry with `method: manual`.
+#   Manual entries are never modified by the engine, and their legs (when
+#   active) are excluded from further matching.
+# - The engine rewrites this file atomically on every pass; hand edits are
+#   picked up at the next pass (default every 10 minutes).
+
+entries:
+  # Rule-pass exact match: identical normalized title (dates like
+  # "July 2026" / "Jul 2026" / "26JUL" canonicalize to 2026-07, thresholds
+  # like "0.0%" / "0.00%" canonicalize to pct:0).
+  - match_id: cpi-more-rise-2026-07-1c2f9a4e
+    legs:
+      - "kalshi:KXCPI-26JUL-T0.0"
+      - "polymarket:0x7c97f7315ac9a2e0eabe9b2b9caa8369feff9518"
+    confidence: exact
+    method: rule
+    status: active
+
+  # Similarity-pass match found without LLM adjudication: lexical scoring
+  # promotes to review at most, so a human confirms before it goes active.
+  - match_id: fed-federal-funds-rate-2027-04-9b31d07a
+    legs:
+      - "kalshi:KXFED-27APR-T4.25"
+      - "polymarket:0x5a1e4b2c9d8f7e6a5b4c3d2e1f0a9b8c7d6e5f4a"
+    confidence: review
+    method: embedding
+    status: review
+    note: "lexical score 0.62"
+
+  # Human-added match the engine could not see (paraphrased titles, no
+  # numeric anchor). Manual entries override everything.
+  - match_id: pres-2028-dem-nominee
+    legs:
+      - "kalshi:KXPRESNOM-28-DEM"
+      - "polymarket:0xa1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+    confidence: high
+    method: manual
+    status: active
+    note: "verified by hand 2026-07-18; same resolution source (DNC nomination)"
+
+  # Rejected: looked similar, resolves differently. Keep the entry so the
+  # engine never re-emits the pair.
+  - match_id: gas-price-2026-12-d4e5f6a7
+    legs:
+      - "kalshi:KXGAS-26DEC-T4.50"
+      - "polymarket:0xdeadbeef00112233445566778899aabbccddeeff"
+    confidence: review
+    method: embedding
+    status: rejected
+    note: "Kalshi uses AAA national average, Polymarket uses EIA weekly — different settlement sources"

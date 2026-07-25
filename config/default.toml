@@ -1,0 +1,41 @@
+[ingest]
+channel_capacity = 10000
+staleness_reconnect_secs = 30
+
+[kalshi]
+enabled = true
+# Active Fed/CPI markets live under the KX-prefixed series (see
+# docs/research/kalshi-api.md); keep the universe small in v1.
+series_filters = ["KXFED", "KXCPI"]
+rest_url = "https://external-api.kalshi.com/trade-api/v2"
+ws_url = "wss://external-api-ws.kalshi.com/trade-api/ws/v2"
+poll_secs = 5 # REST re-poll interval in the degraded no-credential mode
+
+[polymarket]
+enabled = true
+# Gamma tag slugs (Polymarket has no category field; see decisions.md D8).
+# Resolved to tag ids via GET /tags/slug/{slug} at startup.
+tags = ["politics", "economics"]
+max_markets = 200 # highest-24h-volume markets across all tags
+gamma_url = "https://gamma-api.polymarket.com"
+clob_url = "https://clob.polymarket.com"
+ws_url = "wss://ws-subscriptions-clob.polymarket.com/ws/market"
+
+[matcher]
+refresh_secs = 600
+llm_adjudication = false # requires ANTHROPIC_API_KEY
+
+[divergence]
+threshold = 0.03
+freshness_secs = 60
+debounce_secs = 10
+
+[server]
+bind = "0.0.0.0:8080"
+auth_token = "" # empty = auth disabled
+
+[redis]
+url = "redis://localhost:6379"
+
+[clickhouse]
+url = "http://localhost:8123"

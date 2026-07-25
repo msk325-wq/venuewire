@@ -1,0 +1,23 @@
+[package]
+name = "venuewire"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vw-core.workspace = true
+vw-connectors.workspace = true
+vw-recorder.workspace = true
+vw-matcher.workspace = true
+vw-state.workspace = true
+vw-server.workspace = true
+vw-sink-clickhouse.workspace = true
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "signal", "sync", "time", "net"] }
+axum.workspace = true
+prometheus.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+
+[lints]
+workspace = true

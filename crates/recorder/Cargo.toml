@@ -1,0 +1,20 @@
+[package]
+name = "vw-recorder"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vw-core.workspace = true
+tokio = { workspace = true, features = ["sync", "time", "rt", "macros"] }
+anyhow.workspace = true
+chrono.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+
+[lints]
+workspace = true

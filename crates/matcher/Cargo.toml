@@ -1,0 +1,26 @@
+[package]
+name = "vw-matcher"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+vw-core.workspace = true
+
+anyhow.workspace = true
+chrono.workspace = true
+rust_decimal.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+regex.workspace = true
+serde_yaml.workspace = true
+# Workspace reqwest carries the `blocking` feature: the matcher's synchronous
+# run_pass() calls the Anthropic API off the hot path (via spawn_blocking).
+reqwest.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true
