@@ -38,4 +38,9 @@ auth_token = "" # empty = auth disabled
 url = "redis://localhost:6379"
 
 [clickhouse]
-url = "http://localhost:8123"
+# Credentials embedded in the URL: reqwest applies them as HTTP Basic Auth
+# automatically. Matches docker-compose.yml's CLICKHOUSE_USER/PASSWORD.
+# The anonymous `default` user this previously relied on gets a
+# container-generated password whenever a custom user/password pair is
+# set, so connecting as `default` with no credentials now fails auth.
+url = "http://venuewire:venuewire@localhost:8123"

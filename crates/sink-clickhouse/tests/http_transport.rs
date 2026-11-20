@@ -3,6 +3,7 @@
 //! surfacing without a live server.
 
 use axum::extract::{Query, State};
+use axum::http::HeaderMap;
 use axum::routing::post;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -10,8 +11,8 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use vw_sink_clickhouse::{HttpTransport, Transport, TransportError};
 
-/// (query params, body) per captured request.
-type Requests = Vec<(HashMap<String, String>, String)>;
+/// (query params, headers, body) per captured request.
+type Requests = Vec<(HashMap<String, String>, HeaderMap, String)>;
 
 #[derive(Debug, Clone, Default)]
 struct Captured {
@@ -22,9 +23,10 @@ struct Captured {
 async fn stub_handler(
     State(cap): State<Captured>,
     Query(params): Query<HashMap<String, String>>,
+    headers: HeaderMap,
     body: String,
 ) -> (axum::http::StatusCode, String) {
-    cap.requests.lock().unwrap().push((params, body));
+    cap.requests.lock().unwrap().push((params, headers, body));
     if *cap.fail_with_500.lock().unwrap() {
         (
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
@@ -62,13 +64,37 @@ async fn posts_query_param_and_jsoneachrow_body() {
         .unwrap();
     let reqs = cap.requests.lock().unwrap();
     assert_eq!(reqs.len(), 1);
-    let (params, body) = &reqs[0];
+    let (params, _headers, body) = &reqs[0];
     assert_eq!(
         params.get("query").map(String::as_str),
         Some("INSERT INTO ticks FORMAT JSONEachRow")
     );
     assert_eq!(params.get("database").map(String::as_str), Some("default"));
     assert_eq!(body.lines().count(), 2);
+}
+
+/// ClickHouse's real HTTP interface 411s a POST with neither
+/// Content-Length nor Transfer-Encoding — which is exactly what reqwest
+/// sends for a truly empty `String` body (the DDL path) unless the
+/// header is set explicitly. axum's `String` extractor doesn't enforce
+/// this the way ClickHouse does, so this test checks the header directly
+/// rather than relying on the stub to reject its absence.
+#[tokio::test]
+async fn empty_ddl_body_still_sets_content_length() {
+    let (addr, cap) = spawn_stub().await;
+    let transport =
+        HttpTransport::new(&format!("http://{addr}"), "default", Duration::from_secs(2)).unwrap();
+    transport
+        .execute("CREATE TABLE IF NOT EXISTS ticks (...)", String::new())
+        .await
+        .unwrap();
+    let reqs = cap.requests.lock().unwrap();
+    let (_params, headers, body) = &reqs[0];
+    assert_eq!(body, "");
+    assert_eq!(
+        headers.get("content-length").map(|v| v.to_str().unwrap()),
+        Some("0")
+    );
 }
 
 #[tokio::test]
@@ -98,15 +124,18 @@ async fn rejects_invalid_url() {
     ));
 }
 
-/// Live smoke test against a real ClickHouse at localhost:8123. Requires
-/// Docker/ClickHouse; run with `cargo test -p vw-sink-clickhouse -- --ignored`.
+/// Live smoke test against a real ClickHouse at localhost:8123, using the
+/// same venuewire/venuewire credentials docker-compose.yml provisions
+/// (the default user needs them too — see the ClickHouse auth fix in
+/// config/default.toml). Requires Docker/ClickHouse; run with
+/// `cargo test -p vw-sink-clickhouse -- --ignored`.
 #[tokio::test]
 #[ignore = "requires a live ClickHouse at http://localhost:8123"]
 async fn live_ensure_schema_and_insert() {
     use vw_sink_clickhouse::{ClickHouseSink, SinkEvent, SinkOptions};
 
     let options = SinkOptions {
-        url: "http://localhost:8123".into(),
+        url: "http://venuewire:venuewire@localhost:8123".into(),
         flush_interval: Duration::from_millis(100),
         ..SinkOptions::default()
     };

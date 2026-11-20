@@ -61,10 +61,18 @@ impl HttpTransport {
 #[async_trait]
 impl Transport for HttpTransport {
     async fn execute(&self, query: &str, body: String) -> Result<(), TransportError> {
+        // reqwest omits both Content-Length and Transfer-Encoding for a
+        // truly empty String body (the DDL path, which sends no body)
+        // rather than sending `Content-Length: 0`. ClickHouse's HTTP
+        // interface requires one or the other and 411s otherwise, so set
+        // it explicitly — reqwest leaves an explicit Content-Length as-is
+        // for non-empty bodies, where it already computes the same value.
+        let content_length = body.len();
         let resp = self
             .client
             .post(self.url.clone())
             .query(&[("query", query), ("database", &self.database)])
+            .header(reqwest::header::CONTENT_LENGTH, content_length)
             .body(body)
             .send()
             .await?;
