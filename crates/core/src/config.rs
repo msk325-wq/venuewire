@@ -235,7 +235,10 @@ mod tests {
         assert_eq!(cfg.server.bind, "0.0.0.0:8080");
         assert!(cfg.server.auth_token.is_empty());
         assert_eq!(cfg.redis.url, "redis://localhost:6379");
-        assert_eq!(cfg.clickhouse.url, "http://localhost:8123");
+        assert_eq!(
+            cfg.clickhouse.url,
+            "http://venuewire:venuewire@localhost:8123"
+        );
     }
 
     #[test]
